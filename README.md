@@ -1,9 +1,5 @@
-# ModernScalaStack
-Bare bones project demonstrating various aspects of the modern Scala ecosystem
+# Agentsy
 
-This project contains very basic implementations of:
-1. Scala 3
-2. An SBT multi-module project
-3. MDocs (run with `docs/mdoc`)
-4. The Cats ecosystem
-5. The ZIO ecosystem (coming soon)# agentsy
+Agent based modelling in Scala.
+Benefits:
+- Scalable. It can run as a single thread, multithreaded or distributed (eg via Spark)
