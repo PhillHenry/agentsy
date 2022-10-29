@@ -28,6 +28,7 @@ object Dependencies {
 
     val scalacheck = "1.16.0"
     val weaver     = "0.7.12"
+    val scalaTest  = "3.2.14"
 
     val organizeImports = "0.6.0"
 
@@ -91,6 +92,8 @@ object Dependencies {
     val weaverCats       = "com.disneystreaming" %% "weaver-cats"       % V.weaver
     val weaverDiscipline = "com.disneystreaming" %% "weaver-discipline" % V.weaver
     val weaverScalaCheck = "com.disneystreaming" %% "weaver-scalacheck" % V.weaver
+    val scalaTest        = "org.scalatest"       %% "scalatest"         % V.scalaTest
+
 
     // only for demo
     val fs2Kafka = "com.github.fd4s" %% "fs2-kafka" % V.fs2Kafka

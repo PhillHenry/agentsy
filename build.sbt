@@ -49,6 +49,7 @@ val commonSettings = List(
     Libraries.weaverScalaCheck    % Test,
     Libraries.dockerJava          % Test,
     Libraries.dockerJavaTransport % Test,
+    Libraries.scalaTest           % Test,
   ),
 )
 
