@@ -1,8 +1,8 @@
 package uk.co.odinconsultants.agentsy
 
-import cats.Applicative
+import cats.{Applicative, Monad}
 
-trait Model[T[_]: Applicative] {
+trait Model[T[_]] {
   type State
   type Input
   type Output
@@ -11,12 +11,14 @@ trait Model[T[_]: Applicative] {
 
 case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int)
 
-class HealthCareModel[T[_]: Applicative] extends Model[T] {
+class HealthCareModel[T[_]: Monad] extends Model[T] {
   type State  = HealthCareDemand
-  type Input  = Int
-  type Output = Unit
-  val initialState: StateTransition = (state, input) =>
+  type Input  = Float
+  type Output = T[Unit]
+  def initialState(incEmergency: Output): StateTransition = (state, input) =>
     Applicative[T].pure {
+      if (input < 0.4) // walk-in
+        (state.copy(emergency = state.emergency + 1), incEmergency)
       ???
     }
 }
