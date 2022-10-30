@@ -11,16 +11,24 @@ trait Model[T[_]] {
 
 case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int)
 
-class HealthCareModel[T[_]: Monad] extends Model[T] {
-  type State  = HealthCareDemand
-  type Input  = Float
-  type Output = T[Unit]
-  def initialState(incEmergency: Output): StateTransition = (state, input) =>
-    Applicative[T].pure {
-      if (input < 0.4) // walk-in
-        (state.copy(emergency = state.emergency + 1), incEmergency)
-      ???
-    }
+class HealthCareModel[T[_]: Monad, A] {
+  type State     = HealthCareDemand
+  type Input     = Float
+  type Output[A] = T[A]
+  def initialState(
+      incEmergency: Output[A],
+      incAmbulance: Output[A],
+      incGP:        Output[A],
+  ): (HealthCareDemand, Float) => T[(HealthCareDemand, Output[A])] =
+    (state, input) =>
+      Applicative[T].pure {
+        if (input < 0.4) // walk-in
+          (state.copy(emergency = state.emergency + 1), incEmergency)
+        else if (input < 0.5)
+          (state.copy(ambulance = state.ambulance + 1), incAmbulance)
+        else
+          (state.copy(ambulance = state.ambulance + 1), incGP)
+      }
 }
 
 class StateModel[T[_]: Applicative] extends Model[T] {
