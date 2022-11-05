@@ -24,9 +24,18 @@ class FSMSpec extends wordspec.AnyWordSpec {
     val gp        = AtomicInteger(1)
   }
 
+  "Monadic health care FSM" should {
+    "increase counts according to monadic state transition" in {
+      import Effects.*
+      val fixture = new HealthCareFixture[MyIO, MyIO[Float]] {}
+      import fixture.*
+//      val transition: StateTransition = model.initialState(
+    }
+  }
+
   "Health care FSM" should {
-    "increase counts according to state transition" in {
-      val fixture = new HealthCareFixture[Id, () => Int] { }
+    "increase counts according to simple state transition" in {
+      val fixture = new HealthCareFixture[Id, () => Int] {}
       import fixture.*
       val transition: StateTransition = model.initialState(
         Id(() => emergency.incrementAndGet()),
