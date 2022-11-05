@@ -15,10 +15,13 @@ object Effects {
     override def flatMap[A, B](ma: MyIO[A])(f: A => MyIO[B]): MyIO[B]      =
       MyIO(() => f(ma.unsafeRun()).unsafeRun())
     override def tailRecM[A, B](a: A)(f: A => MyIO[Either[A, B]]): MyIO[B] = {
-      f(a).unsafeRun() match {
-        case Left(a)  => tailRecM(a)(f) // TODO not stack safe
-        case Right(x) => MyIO.create(x)
+      @tailrec def go(a: A)(f: A => MyIO[Either[A, B]]): MyIO[B] = {
+        f(a).unsafeRun() match {
+          case Left(a)  => go(a)(f)
+          case Right(x) => MyIO.create(x)
+        }
       }
-}
+      go(a)(f)
+    }
   }
 }
