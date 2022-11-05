@@ -1,6 +1,7 @@
 package uk.co.odinconsultants.agentsy
 
 import cats.{Applicative, Monad}
+import shapeless.ops.coproduct.FlatMap
 
 trait Model[T[_]] {
   type State
@@ -14,12 +15,11 @@ case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int)
 class HealthCareModel[T[_]: Monad, A] {
   type State     = HealthCareDemand
   type Input     = Float
-  type Output[A] = T[A]
   def initialState(
-      incEmergency: Output[A],
-      incAmbulance: Output[A],
-      incGP:        Output[A],
-  ): (HealthCareDemand, Float) => T[(HealthCareDemand, Output[A])] =
+      incEmergency: T[A],
+      incAmbulance: T[A],
+      incGP:        T[A],
+  ): (HealthCareDemand, Float) => T[(HealthCareDemand, T[A])] =
     (state, input) =>
       Applicative[T].pure {
         if (input < 0.4) // walk-in
