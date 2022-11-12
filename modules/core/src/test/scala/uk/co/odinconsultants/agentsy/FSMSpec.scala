@@ -41,10 +41,13 @@ class FSMSpec extends wordspec.AnyWordSpec {
           MyIO(() => ambulance.incrementAndGet()),
           MyIO(() => gp.incrementAndGet()),
       )
-//      val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
-//      val transitions = seeds.foldLeft((initialState, MyIO(() => println("starting")))) { case (state, seed) =>
-//        transition(state, seed)
-//      }
+      val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
+      val transitions = seeds.foldLeft((initialState, MyIO(() => 0))) { case (acc, seed) =>
+        val (state: HealthCareDemand, output: MyIO[Int]) = acc
+        val myIO = transition(state, seed)
+        myIO.unsafeRun()
+      }
+//      assert(emergency.get() == initialEmergencyCount + 1)
     }
   }
 

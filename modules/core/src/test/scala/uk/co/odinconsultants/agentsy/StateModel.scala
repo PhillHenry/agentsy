@@ -19,7 +19,7 @@ class HealthCareModel[T[_]: Monad, A] {
   val ambulanceThreshold   = 0.5f
   val typicalWalkInSeed    = 0.39f
   val typicalAmbulanceSeed = 0.49f
-  val typicalGPSeed        = 0.51
+  val typicalGPSeed        = 0.51f
   def transition(
       incEmergency: T[A],
       incAmbulance: T[A],
