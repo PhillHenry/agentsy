@@ -48,7 +48,7 @@ class FSMSpec extends wordspec.AnyWordSpec {
       val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
       val (newState, output)          = transition(initialState, model.walkInThreshold / 2)
       output()
-      assert(emergency.get() == 2)
+      assert(emergency.get() == initialEmergencyCount + 1)
     }
   }
 
