@@ -2,7 +2,7 @@ package uk.co.odinconsultants.agentsy
 
 import org.scalatest.*
 import org.scalatest.matchers.Matcher
-import cats.{Id, Monad}
+import cats.{Applicative, Id, Monad}
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -30,9 +30,21 @@ class FSMSpec extends wordspec.AnyWordSpec {
   "Monadic health care FSM" should {
     "increase counts according to monadic state transition" in {
       import Effects.*
-      val fixture = new HealthCareFixture[MyIO, MyIO[Float]] {}
+      val fixture      = new HealthCareFixture[MyIO, Int] {}
       import fixture.*
-//      val transition: StateTransition = model.initialState(
+      val seeds        = List(model.typicalWalkInSeed, model.typicalAmbulanceSeed, model.typicalGPSeed)
+
+      // (HealthCareDemand, Float) => T[(HealthCareDemand, Output)]
+      val transition: (HealthCareDemand, Float) => MyIO[(HealthCareDemand, MyIO[Int])] = model.transition(
+//      val transition = model.transition(
+          MyIO(() => emergency.incrementAndGet()),
+          MyIO(() => ambulance.incrementAndGet()),
+          MyIO(() => gp.incrementAndGet()),
+      )
+//      val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
+//      val transitions = seeds.foldLeft((initialState, MyIO(() => println("starting")))) { case (state, seed) =>
+//        transition(state, seed)
+//      }
     }
   }
 
@@ -40,7 +52,7 @@ class FSMSpec extends wordspec.AnyWordSpec {
     "increase counts according to simple state transition" in {
       val fixture                     = new HealthCareFixture[Id, () => Int] {}
       import fixture.*
-      val transition: StateTransition = model.initialState(
+      val transition: StateTransition = model.transition(
         Id(() => emergency.incrementAndGet()),
         Id(() => ambulance.incrementAndGet()),
         Id(() => gp.incrementAndGet()),

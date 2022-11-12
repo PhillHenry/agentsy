@@ -15,9 +15,12 @@ case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int)
 class HealthCareModel[T[_]: Monad, A] {
   type State = HealthCareDemand
   type Input = Float
-  val walkInThreshold    = 0.4f
-  val ambulanceThreshold = 0.5f
-  def initialState(
+  val walkInThreshold      = 0.4f
+  val ambulanceThreshold   = 0.5f
+  val typicalWalkInSeed    = 0.39f
+  val typicalAmbulanceSeed = 0.49f
+  val typicalGPSeed        = 0.51
+  def transition(
       incEmergency: T[A],
       incAmbulance: T[A],
       incGP:        T[A],
