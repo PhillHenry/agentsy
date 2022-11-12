@@ -13,8 +13,10 @@ trait Model[T[_]] {
 case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int)
 
 class HealthCareModel[T[_]: Monad, A] {
-  type State     = HealthCareDemand
-  type Input     = Float
+  type State = HealthCareDemand
+  type Input = Float
+  val walkInThreshold    = 0.4f
+  val ambulanceThreshold = 0.5f
   def initialState(
       incEmergency: T[A],
       incAmbulance: T[A],
@@ -22,9 +24,9 @@ class HealthCareModel[T[_]: Monad, A] {
   ): (HealthCareDemand, Float) => T[(HealthCareDemand, T[A])] =
     (state, input) =>
       Applicative[T].pure {
-        if (input < 0.4) // walk-in
+        if (input < walkInThreshold) // walk-in
           (state.copy(emergency = state.emergency + 1), incEmergency)
-        else if (input < 0.5)
+        else if (input < ambulanceThreshold)
           (state.copy(ambulance = state.ambulance + 1), incAmbulance)
         else
           (state.copy(ambulance = state.ambulance + 1), incGP)

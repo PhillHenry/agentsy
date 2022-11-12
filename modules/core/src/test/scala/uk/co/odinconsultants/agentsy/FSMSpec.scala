@@ -19,9 +19,12 @@ class FSMSpec extends wordspec.AnyWordSpec {
   trait HealthCareFixture[T[_]: Monad, Output] {
     val model: HealthCareModel[T, Output] = new HealthCareModel[T, Output]
     type StateTransition = (HealthCareDemand, Float) => T[(HealthCareDemand, Output)]
-    val emergency = AtomicInteger(1)
-    val ambulance = AtomicInteger(1)
-    val gp        = AtomicInteger(1)
+    val initialEmergencyCount = 1
+    val initialAmbulanceCount = 1
+    val initialGPCount        = 1
+    val emergency             = AtomicInteger(initialEmergencyCount)
+    val ambulance             = AtomicInteger(initialAmbulanceCount)
+    val gp                    = AtomicInteger(initialGPCount)
   }
 
   "Monadic health care FSM" should {
@@ -43,7 +46,7 @@ class FSMSpec extends wordspec.AnyWordSpec {
         Id(() => gp.incrementAndGet()),
       )
       val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
-      val (newState, output)          = transition(initialState, 0.1)
+      val (newState, output)          = transition(initialState, model.walkInThreshold / 2)
       output()
       assert(emergency.get() == 2)
     }
