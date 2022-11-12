@@ -1,5 +1,6 @@
 package uk.co.odinconsultants.agentsy
 import cats.Monad
+import cats.effect.kernel.Concurrent
 
 import scala.annotation.tailrec
 
@@ -24,4 +25,8 @@ object Effects {
       go(a)(f)
     }
   }
+
+//  given ioConcurrent: Concurrent[MyIO] with {
+//
+//  }
 }

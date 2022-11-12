@@ -35,7 +35,7 @@ class FSMSpec extends wordspec.AnyWordSpec {
 
   "Health care FSM" should {
     "increase counts according to simple state transition" in {
-      val fixture = new HealthCareFixture[Id, () => Int] {}
+      val fixture                     = new HealthCareFixture[Id, () => Int] {}
       import fixture.*
       val transition: StateTransition = model.initialState(
         Id(() => emergency.incrementAndGet()),
@@ -43,8 +43,8 @@ class FSMSpec extends wordspec.AnyWordSpec {
         Id(() => gp.incrementAndGet()),
       )
       val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
-      val x                           = transition(initialState, 0.1)
-      x._2.apply()
+      val (newState, output)          = transition(initialState, 0.1)
+      output()
       assert(emergency.get() == 2)
     }
   }
