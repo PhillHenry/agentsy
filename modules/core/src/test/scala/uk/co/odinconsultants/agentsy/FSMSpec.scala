@@ -3,6 +3,7 @@ package uk.co.odinconsultants.agentsy
 import org.scalatest.*
 import org.scalatest.matchers.Matcher
 import cats.{Applicative, Id, Monad}
+import cats.syntax.all.*
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -42,12 +43,14 @@ class FSMSpec extends wordspec.AnyWordSpec {
           MyIO(() => gp.incrementAndGet()),
       )
       val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
-      val transitions = seeds.foldLeft((initialState, MyIO(() => 0))) { case (acc, seed) =>
+      val transitions: (HealthCareDemand, MyIO[Int]) = seeds.foldLeft((initialState, MyIO(() => 0))) { case (acc, seed) =>
         val (state: HealthCareDemand, output: MyIO[Int]) = acc
         val myIO = transition(state, seed)
-        myIO.unsafeRun()
+        val (newState, newOutput) = myIO.unsafeRun()
+        (newState, newOutput *> output)
       }
-//      assert(emergency.get() == initialEmergencyCount + 1)
+      transitions._2.unsafeRun()
+      assert(emergency.get() == initialEmergencyCount + 1)
     }
   }
 
