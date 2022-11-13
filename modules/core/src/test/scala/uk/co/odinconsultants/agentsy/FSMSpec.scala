@@ -23,9 +23,7 @@ class FSMSpec extends wordspec.AnyWordSpec {
     val initialEmergencyCount = 1
     val initialAmbulanceCount = 1
     val initialGPCount        = 1
-    val emergency             = AtomicInteger(initialEmergencyCount)
-    val ambulance             = AtomicInteger(initialAmbulanceCount)
-    val gp                    = AtomicInteger(initialGPCount)
+    val initialState = HealthCareDemand(initialGPCount, initialEmergencyCount, initialGPCount)
   }
 
   "Monadic health care FSM" should {
@@ -35,26 +33,21 @@ class FSMSpec extends wordspec.AnyWordSpec {
       import fixture.*
       val seeds   = List(model.typicalWalkInSeed, model.typicalAmbulanceSeed, model.typicalGPSeed)
 
-      // (HealthCareDemand, Float) => T[(HealthCareDemand, Output)]
-      val transition: (HealthCareDemand, Float) => MyIO[(HealthCareDemand, MyIO[Unit])] =
-        model.transition
-      val initialState                                                                  = HealthCareDemand(emergency.get, ambulance.get, gp.get)
-      val transitions: (HealthCareDemand, MyIO[Unit])                                   =
+      val (finalState, outputs)                                   =
         seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case (acc, seed) =>
           val (state: HealthCareDemand, output: MyIO[Unit]) = acc
-          val myIO: MyIO[(HealthCareDemand, MyIO[Unit])]    = transition(state, seed)
+          val myIO: MyIO[(HealthCareDemand, MyIO[Unit])]    = model.transition(state, seed)
           val (newState, newOutput)                         = myIO.unsafeRun()
           (newState, output *> newOutput)
         }
-      assert(transitions._1.emergency == initialEmergencyCount + 1)
+      assert(finalState.emergency == initialEmergencyCount + 1)
     }
   }
 
   "Health care FSM" should {
     "increase counts according to simple state transition" in {
-      val fixture       = new HealthCareFixture[Id, () => Int] {}
+      val fixture       = new HealthCareFixture[Id, Unit] {}
       import fixture.*
-      val initialState  = HealthCareDemand(emergency.get, ambulance.get, gp.get)
       val (newState, _) = model.transition(initialState, model.walkInThreshold / 2)
       assert(newState.emergency == initialEmergencyCount + 1)
     }
