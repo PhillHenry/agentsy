@@ -27,10 +27,7 @@ object Effects {
   }
 
   given ioDefer: Defer[MyIO] with {
-    override def defer[A](fa: => MyIO[A]): MyIO[A] = fa
+    override def defer[A](fa: => MyIO[A]): MyIO[A] = MyIO(() => fa.unsafeRun())
   }
 
-//  given ioConcurrent: Concurrent[MyIO] with {
-//
-//  }
 }

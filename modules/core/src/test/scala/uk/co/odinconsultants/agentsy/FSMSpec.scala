@@ -40,7 +40,9 @@ class FSMSpec extends wordspec.AnyWordSpec {
           val (newState, newOutput)                         = myIO.unsafeRun()
           (newState, newOutput *> output)
         }
+      println("=== About to run outputs...")
       outputs.unsafeRun()
+      println("=== Finished running outputs")
       assert(finalState.emergency == initialEmergencyCount + 1)
     }
   }
