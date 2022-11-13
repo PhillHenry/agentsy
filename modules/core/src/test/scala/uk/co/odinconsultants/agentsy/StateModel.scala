@@ -1,6 +1,6 @@
 package uk.co.odinconsultants.agentsy
 
-import cats.{Applicative, Monad}
+import cats.{Applicative, Monad, Defer}
 import shapeless.ops.coproduct.FlatMap
 
 trait Model[T[_]] {
@@ -12,7 +12,7 @@ trait Model[T[_]] {
 
 case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int)
 
-class HealthCareModel[T[_]: Monad] {
+class HealthCareModel[T[_]: Monad: Defer] {
   type State = HealthCareDemand
   type Input = Float
   val walkInThreshold      = 0.4f
@@ -20,17 +20,35 @@ class HealthCareModel[T[_]: Monad] {
   val typicalWalkInSeed    = 0.39f
   val typicalAmbulanceSeed = 0.49f
   val typicalGPSeed        = 0.51f
-  val DoNothing: T[Unit] = Applicative[T].pure(())
-  
+  val DoNothing: T[Unit]   = Applicative[T].pure(())
+
   val transition: (HealthCareDemand, Float) => T[(HealthCareDemand, T[Unit])] =
     (state, input) =>
       Applicative[T].pure {
         if (input < walkInThreshold) // walk-in
-          (state.copy(emergency = state.emergency + 1), DoNothing)
+          (
+            state.copy(emergency = state.emergency + 1),
+            Defer[T].defer {
+              println("Emergency")
+              DoNothing
+            },
+          )
         else if (input < ambulanceThreshold)
-          (state.copy(ambulance = state.ambulance + 1), DoNothing)
+          (
+            state.copy(ambulance = state.ambulance + 1),
+            Defer[T].defer {
+              println("Ambulance")
+              DoNothing
+            },
+          )
         else
-          (state.copy(ambulance = state.ambulance + 1), DoNothing)
+          (
+            state.copy(gp = state.gp + 1),
+            Defer[T].defer {
+              println("GP")
+              DoNothing
+            },
+          )
       }
 }
 

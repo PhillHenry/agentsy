@@ -1,5 +1,5 @@
 package uk.co.odinconsultants.agentsy
-import cats.Monad
+import cats.{Monad, Defer}
 import cats.effect.kernel.Concurrent
 
 import scala.annotation.tailrec
@@ -24,6 +24,10 @@ object Effects {
       }
       go(a)(f)
     }
+  }
+
+  given ioDefer: Defer[MyIO] with {
+    override def defer[A](fa: => MyIO[A]): MyIO[A] = fa
   }
 
 //  given ioConcurrent: Concurrent[MyIO] with {
