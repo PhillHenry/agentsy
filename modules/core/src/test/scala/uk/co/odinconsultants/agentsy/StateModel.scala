@@ -12,7 +12,7 @@ trait Model[T[_]] {
 
 case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int)
 
-class HealthCareModel[T[_]: Monad, A] {
+class HealthCareModel[T[_]: Monad] {
   type State = HealthCareDemand
   type Input = Float
   val walkInThreshold      = 0.4f
@@ -20,19 +20,17 @@ class HealthCareModel[T[_]: Monad, A] {
   val typicalWalkInSeed    = 0.39f
   val typicalAmbulanceSeed = 0.49f
   val typicalGPSeed        = 0.51f
-  def transition(
-      incEmergency: T[A],
-      incAmbulance: T[A],
-      incGP:        T[A],
-  ): (HealthCareDemand, Float) => T[(HealthCareDemand, T[A])] =
+  val DoNothing: T[Unit] = Applicative[T].pure(())
+  
+  val transition: (HealthCareDemand, Float) => T[(HealthCareDemand, T[Unit])] =
     (state, input) =>
       Applicative[T].pure {
         if (input < walkInThreshold) // walk-in
-          (state.copy(emergency = state.emergency + 1), incEmergency)
+          (state.copy(emergency = state.emergency + 1), DoNothing)
         else if (input < ambulanceThreshold)
-          (state.copy(ambulance = state.ambulance + 1), incAmbulance)
+          (state.copy(ambulance = state.ambulance + 1), DoNothing)
         else
-          (state.copy(ambulance = state.ambulance + 1), incGP)
+          (state.copy(ambulance = state.ambulance + 1), DoNothing)
       }
 }
 

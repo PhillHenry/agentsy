@@ -18,7 +18,7 @@ class FSMSpec extends wordspec.AnyWordSpec {
   }
 
   trait HealthCareFixture[T[_]: Monad, Output] {
-    val model: HealthCareModel[T, Output] = new HealthCareModel[T, Output]
+    val model: HealthCareModel[T] = new HealthCareModel[T]
     type StateTransition = (HealthCareDemand, Float) => T[(HealthCareDemand, Output)]
     val initialEmergencyCount = 1
     val initialAmbulanceCount = 1
@@ -31,42 +31,32 @@ class FSMSpec extends wordspec.AnyWordSpec {
   "Monadic health care FSM" should {
     "increase counts according to monadic state transition" in {
       import Effects.*
-      val fixture      = new HealthCareFixture[MyIO, Int] {}
+      val fixture = new HealthCareFixture[MyIO, Unit] {}
       import fixture.*
-      val seeds        = List(model.typicalWalkInSeed, model.typicalAmbulanceSeed, model.typicalGPSeed)
+      val seeds   = List(model.typicalWalkInSeed, model.typicalAmbulanceSeed, model.typicalGPSeed)
 
       // (HealthCareDemand, Float) => T[(HealthCareDemand, Output)]
-      val transition: (HealthCareDemand, Float) => MyIO[(HealthCareDemand, MyIO[Int])] = model.transition(
-//      val transition = model.transition(
-          MyIO(() => emergency.incrementAndGet()),
-          MyIO(() => ambulance.incrementAndGet()),
-          MyIO(() => gp.incrementAndGet()),
-      )
-      val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
-      val transitions: (HealthCareDemand, MyIO[Int]) = seeds.foldLeft((initialState, MyIO(() => 0))) { case (acc, seed) =>
-        val (state: HealthCareDemand, output: MyIO[Int]) = acc
-        val myIO = transition(state, seed)
-        val (newState, newOutput) = myIO.unsafeRun()
-        (newState, newOutput *> output)
-      }
-      transitions._2.unsafeRun()
-      assert(emergency.get() == initialEmergencyCount + 1)
+      val transition: (HealthCareDemand, Float) => MyIO[(HealthCareDemand, MyIO[Unit])] =
+        model.transition
+      val initialState                                                                  = HealthCareDemand(emergency.get, ambulance.get, gp.get)
+      val transitions: (HealthCareDemand, MyIO[Unit])                                   =
+        seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case (acc, seed) =>
+          val (state: HealthCareDemand, output: MyIO[Unit]) = acc
+          val myIO: MyIO[(HealthCareDemand, MyIO[Unit])]    = transition(state, seed)
+          val (newState, newOutput)                         = myIO.unsafeRun()
+          (newState, output *> newOutput)
+        }
+      assert(transitions._1.emergency == initialEmergencyCount + 1)
     }
   }
 
   "Health care FSM" should {
     "increase counts according to simple state transition" in {
-      val fixture                     = new HealthCareFixture[Id, () => Int] {}
+      val fixture       = new HealthCareFixture[Id, () => Int] {}
       import fixture.*
-      val transition: StateTransition = model.transition(
-        Id(() => emergency.incrementAndGet()),
-        Id(() => ambulance.incrementAndGet()),
-        Id(() => gp.incrementAndGet()),
-      )
-      val initialState                = HealthCareDemand(emergency.get, ambulance.get, gp.get)
-      val (newState, output)          = transition(initialState, model.walkInThreshold / 2)
-      output()
-      assert(emergency.get() == initialEmergencyCount + 1)
+      val initialState  = HealthCareDemand(emergency.get, ambulance.get, gp.get)
+      val (newState, _) = model.transition(initialState, model.walkInThreshold / 2)
+      assert(newState.emergency == initialEmergencyCount + 1)
     }
   }
 
