@@ -17,14 +17,6 @@ class FSMSpec extends wordspec.AnyWordSpec {
     }
   }
 
-  trait HealthCareFixture[T[_]: Monad, Output] {
-    type StateTransition = (HealthCareDemand, Float) => T[(HealthCareDemand, Output)]
-    val initialEmergencyCount = 1
-    val initialAmbulanceCount = 1
-    val initialGPCount        = 1
-    val initialState          = HealthCareDemand(initialGPCount, initialEmergencyCount, initialGPCount)
-  }
-
   "Monadic health care FSM" should {
     "increase counts according to monadic state transition" in {
       import Effects.*
@@ -36,7 +28,7 @@ class FSMSpec extends wordspec.AnyWordSpec {
       val (finalState, outputs) =
         seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case (acc, seed) =>
           val (state: HealthCareDemand, output: MyIO[Unit]) = acc
-          val myIO: MyIO[(HealthCareDemand, MyIO[Unit])]    = model.transition(state, seed)
+          val myIO: MyIO[(HealthCareDemand, MyIO[Unit])]    = model.transitionEffectfully(state, seed)
           val (newState, newOutput)                         = myIO.unsafeRun()
           (newState, newOutput *> output)
         }
@@ -55,7 +47,7 @@ class FSMSpec extends wordspec.AnyWordSpec {
       val fixture       = new HealthCareFixture[Id, Unit] {}
       import fixture.*
       val model: HealthCareModel[Id] = new HealthCareModel[Id]
-      val (newState, _) = model.transition(initialState, model.walkInThreshold / 2)
+      val (newState, _) = model.transitionEffectfully(initialState, model.walkInThreshold / 2)
       assert(newState.emergency == initialEmergencyCount + 1)
     }
   }

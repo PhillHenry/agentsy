@@ -1,7 +1,10 @@
 package uk.co.odinconsultants.agentsy
 
-import cats.{Applicative, Monad, Defer}
+import cats.effect.IOApp
+import cats.{Applicative, Defer, Monad}
 import shapeless.ops.coproduct.FlatMap
+import cats.syntax.all.*
+import scala.util.Random
 
 trait Model[T[_]] {
   type State
@@ -10,7 +13,9 @@ trait Model[T[_]] {
   type StateTransition = (State, Input) => T[(State, Output)]
 }
 
-case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int)
+case class HealthCareDemand(gp: Int, emergency: Int, ambulance: Int) {
+  def total: Long = gp + emergency + ambulance
+}
 
 class HealthCareModel[T[_]: Monad: Defer] {
   type State = HealthCareDemand
@@ -22,7 +27,7 @@ class HealthCareModel[T[_]: Monad: Defer] {
   val typicalGPSeed        = 0.51f
   val DoNothing: T[Unit]   = Applicative[T].pure(())
 
-  val transition: (HealthCareDemand, Float) => T[(HealthCareDemand, T[Unit])] =
+  val transitionEffectfully: (HealthCareDemand, Float) => T[(HealthCareDemand, T[Unit])] =
     (state, input) =>
       Applicative[T].pure {
         if (input < walkInThreshold) // walk-in
@@ -50,6 +55,13 @@ class HealthCareModel[T[_]: Monad: Defer] {
             },
           )
       }
+
+  val transition: (HealthCareDemand, Float) => (HealthCareDemand, T[Unit]) = (state, input) =>
+    if (input < walkInThreshold)
+      (state.copy(emergency = state.emergency + 1), DoNothing)
+    else if (input < ambulanceThreshold)
+      (state.copy(ambulance = state.ambulance + 1), DoNothing)
+    else (state.copy(gp = state.gp + 1), DoNothing)
 }
 
 class StateModel[T[_]: Applicative] extends Model[T] {
@@ -62,4 +74,34 @@ class StateModel[T[_]: Applicative] extends Model[T] {
       val newState: Long = state + input
       (newState, println(s"$state - $input -> $newState"))
     }
+}
+
+trait HealthCareFixture[T[_]: Monad, Output] {
+  type StateTransition = (HealthCareDemand, Float) => T[(HealthCareDemand, Output)]
+  val initialEmergencyCount = 1
+  val initialAmbulanceCount = 1
+  val initialGPCount        = 1
+  val initialState          = HealthCareDemand(initialGPCount, initialEmergencyCount, initialGPCount)
+}
+
+object StateModel {
+
+  def main(args: Array[String]): Unit = {
+    import Effects.*
+    val fixture                      = new HealthCareFixture[MyIO, Unit] {}
+    import fixture.*
+    val model: HealthCareModel[MyIO] = new HealthCareModel[MyIO]
+    val n                            = 100000000
+    val seeds                        = (1 to n).map(_ => Random.nextFloat())
+    println(s"Running $n times")
+    val (finalState, outputs)        =
+      seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case (acc, seed) =>
+        val (state: HealthCareDemand, output: MyIO[Unit]) = acc
+        val (newState, newOutput)                         = model.transition(state, seed)
+        (newState, newOutput *> output)
+      }
+    println(finalState)
+    println(s"Total ${finalState.total}")
+  }
+
 }
