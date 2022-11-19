@@ -98,7 +98,7 @@ object StateModel {
       seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case (acc, seed) =>
         val (state: HealthCareDemand, output: MyIO[Unit]) = acc
         val (newState, newOutput)                         = model.transition(state, seed)
-        (newState, newOutput *> output)
+        (newState, newOutput *> output)  // this *> appears to create a new MyIO
       }
     println(finalState)
     println(s"Total ${finalState.total}")
