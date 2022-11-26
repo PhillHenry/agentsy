@@ -78,9 +78,9 @@ class StateModel[T[_]: Applicative] extends Model[T] {
 
 trait HealthCareFixture[T[_]: Monad, Output] {
   type StateTransition = (HealthCareDemand, Float) => T[(HealthCareDemand, Output)]
-  val initialEmergencyCount = 1
-  val initialAmbulanceCount = 1
-  val initialGPCount        = 1
+  val initialEmergencyCount = 0
+  val initialAmbulanceCount = 0
+  val initialGPCount        = 0
   val initialState          = HealthCareDemand(initialGPCount, initialEmergencyCount, initialGPCount)
 }
 
@@ -98,7 +98,8 @@ object StateModel {
       seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case (acc, seed) =>
         val (state: HealthCareDemand, output: MyIO[Unit]) = acc
         val (newState, newOutput)                         = model.transition(state, seed)
-        (newState, newOutput *> output)  // this *> appears to create a new MyIO
+//        (newState, newOutput *> output)  // this *> appears to create a new MyIO
+        (newState, model.DoNothing)  // much more efficient
       }
     println(finalState)
     println(s"Total ${finalState.total}")
