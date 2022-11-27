@@ -26,11 +26,10 @@ class FSMSpec extends wordspec.AnyWordSpec {
       val seeds                        = List(model.typicalWalkInSeed, model.typicalAmbulanceSeed, model.typicalGPSeed)
 
       val (finalState, outputs) =
-        seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case (acc, seed) =>
-          val (state: HealthCareDemand, output: MyIO[Unit]) = acc
-          val myIO: MyIO[(HealthCareDemand, MyIO[Unit])]    = model.transitionEffectfully(state, seed)
-          val (newState, newOutput)                         = myIO.unsafeRun()
-          (newState, newOutput *> output)
+        seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case ((state, output), seed) =>
+          val effects               = model.transitionEffectfully(state, seed)
+          val (newState, newOutput) = effects.unsafeRun()
+          (newState, output *> newOutput)
         }
       println("=== About to run outputs...")
       outputs.unsafeRun()
@@ -44,10 +43,10 @@ class FSMSpec extends wordspec.AnyWordSpec {
       given hack: Defer[Id] with {
         override def defer[A](fa: => Id[A]): Id[A] = fa
       }
-      val fixture       = new HealthCareFixture[Id, Unit] {}
+      val fixture = new HealthCareFixture[Id, Unit] {}
       import fixture.*
       val model: HealthCareModel[Id] = new HealthCareModel[Id]
-      val (newState, _) = model.transitionEffectfully(initialState, model.walkInThreshold / 2)
+      val (newState, _)              = model.transitionEffectfully(initialState, model.walkInThreshold / 2)
       assert(newState.emergency == initialEmergencyCount + 1)
     }
   }

@@ -25,7 +25,13 @@ class HealthCareModel[T[_]: Monad: Defer] {
   val typicalWalkInSeed    = 0.39f
   val typicalAmbulanceSeed = 0.49f
   val typicalGPSeed        = 0.51f
+  val maxAmbulance         = 200
   val DoNothing: T[Unit]   = Applicative[T].pure(())
+
+  def deferPrint(msg: String): T[Unit] = Defer[T].defer {
+    println(msg)
+    DoNothing
+  }
 
   val transitionEffectfully: (HealthCareDemand, Float) => T[(HealthCareDemand, T[Unit])] =
     (state, input) =>
@@ -33,26 +39,20 @@ class HealthCareModel[T[_]: Monad: Defer] {
         if (input < walkInThreshold) // walk-in
           (
             state.copy(emergency = state.emergency + 1),
-            Defer[T].defer {
-              println("Emergency")
-              DoNothing
-            },
+            deferPrint("Emergency")
           )
         else if (input < ambulanceThreshold)
-          (
-            state.copy(ambulance = state.ambulance + 1),
-            Defer[T].defer {
-              println("Ambulance")
-              DoNothing
-            },
-          )
+            if (state.ambulance >= maxAmbulance) (
+              state.copy(emergency = state.emergency + 1),
+              deferPrint("No ambulances. Patient walks to A&E")
+            ) else (
+              state.copy(ambulance = state.ambulance + 1),
+              deferPrint("Ambulance")
+            )
         else
           (
             state.copy(gp = state.gp + 1),
-            Defer[T].defer {
-              println("GP")
-              DoNothing
-            },
+            deferPrint("GP")
           )
       }
 
@@ -99,7 +99,7 @@ object StateModel {
         val (state: HealthCareDemand, output: MyIO[Unit]) = acc
         val (newState, newOutput)                         = model.transition(state, seed)
 //        (newState, newOutput *> output)  // this *> appears to create a new MyIO
-        (newState, model.DoNothing)  // much more efficient
+        (newState, model.DoNothing) // much more efficient
       }
     println(finalState)
     println(s"Total ${finalState.total}")
