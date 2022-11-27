@@ -88,15 +88,15 @@ object StateModel {
 
   def main(args: Array[String]): Unit = {
     import Effects.*
-    val fixture                      = new HealthCareFixture[MyIO, Unit] {}
+    val fixture                      = new HealthCareFixture[StateEffect, Unit] {}
     import fixture.*
-    val model: HealthCareModel[MyIO] = new HealthCareModel[MyIO]
+    val model: HealthCareModel[StateEffect] = new HealthCareModel[StateEffect]
     val n                            = 100000000
     val seeds                        = (1 to n).map(_ => Random.nextFloat())
     println(s"Running $n times")
     val (finalState, outputs)        =
-      seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case (acc, seed) =>
-        val (state: HealthCareDemand, output: MyIO[Unit]) = acc
+      seeds.foldLeft((initialState, StateEffect(() => println("Started")))) { case (acc, seed) =>
+        val (state: HealthCareDemand, output: StateEffect[Unit]) = acc
         val (newState, newOutput)                         = model.transition(state, seed)
 //        (newState, newOutput *> output)  // this *> appears to create a new MyIO
         (newState, model.DoNothing) // much more efficient

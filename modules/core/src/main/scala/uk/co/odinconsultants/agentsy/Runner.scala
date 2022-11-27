@@ -7,7 +7,7 @@ import scala.util.Random.nextFloat
 object Runner {
 
   def main(args: Array[String]) : Unit = {
-    val randoms = Stream.eval(MyIO(() => nextFloat())).repeat
+    val randoms = Stream.eval(StateEffect(() => nextFloat())).repeat
 
     /**
      * Cannot find an implicit Compiler[F, G]. This typically means you need a Concurrent[F] in

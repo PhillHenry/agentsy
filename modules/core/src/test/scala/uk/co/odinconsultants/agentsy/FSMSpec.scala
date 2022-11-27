@@ -20,13 +20,14 @@ class FSMSpec extends wordspec.AnyWordSpec {
   "Monadic health care FSM" should {
     "increase counts according to monadic state transition" in {
       import Effects.*
-      val fixture                      = new HealthCareFixture[MyIO, Unit] {}
+      val fixture                      = new HealthCareFixture[StateEffect, Unit] {}
       import fixture.*
-      val model: HealthCareModel[MyIO] = new HealthCareModel[MyIO]
+      val model: HealthCareModel[StateEffect] = new HealthCareModel[StateEffect]
       val seeds                        = List(model.typicalWalkInSeed, model.typicalAmbulanceSeed, model.typicalGPSeed)
 
+      val initialEffect: StateEffect[Unit] = StateEffect(() => println("Started"))
       val (finalState, outputs) =
-        seeds.foldLeft((initialState, MyIO(() => println("Started")))) { case ((state, output), seed) =>
+        seeds.foldLeft((initialState, initialEffect)) { case ((state, output), seed) =>
           val effects               = model.transitionEffectfully(state, seed)
           val (newState, newOutput) = effects.unsafeRun()
           (newState, output *> newOutput)
